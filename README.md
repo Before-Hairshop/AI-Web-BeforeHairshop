@@ -1,2 +1,7 @@
 # AI-Web-BeforeHairshop
-웹 상에서 HairCLIP 모델을 inference 해주는 서버
+Instance for inferencing HairCLIP model
+
+## Running on instance
+```shell
+$ nohup python3 inference.py > log.out &
+```
