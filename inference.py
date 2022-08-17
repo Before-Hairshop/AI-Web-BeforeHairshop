@@ -69,7 +69,7 @@ def main():
         # messages = response_queue.receive_messages(QueueUrl=AWS_REQUEST_SQS_URL)
         messages = response_queue.meta.client.receive_message(
             QueueUrl=AWS_REQUEST_SQS_URL,
-            MaxNumberOfMessages=2,
+            MaxNumberOfMessages=1,
             WaitTimeSeconds=2,
             MessageAttributeNames=['All']
         )
@@ -117,6 +117,7 @@ def main():
                     # Send message to Request Queue
                     response_queue.send_message(MessageBody=fail_message_body_str, QueueUrl=AWS_RESPONSE_SQS_URL)
                     logger.info("Send message failed! (Message body : { result : %s, user_id : %s })", "fail", param_user_id)
+                    continue
                 except ClientError as error:
                     logger.exception("Send message failed! (Message body : { result : %s, user_id : %s })", "fail", param_user_id)
 
