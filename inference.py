@@ -1,4 +1,5 @@
 ## Beforehairshop 폴더 아래에 있는 파일
+from genericpath import isfile
 import subprocess
 import boto3
 import json
@@ -87,7 +88,7 @@ def main():
             data = message['Body']
             data = json.loads(data)
 
-            print("Message from Request Queue : ", data)
+            logger.info("Message from Request Queue : ", data)
 
             param_user_id = data["user_id"]
 
@@ -105,6 +106,23 @@ def main():
 
             subprocess.call("/home/ubuntu/BeforeHairshop/encoder4editing/e4e_encoding.py", shell=True)
             
+            # e4e 모델로 임베딩됐는지 확인 (파일 생성 안됐으면, fail return)
+            if os.path.isfile('/home/ubuntu/BeforeHairshop/HairCLIP/base_face.pt'):
+                fail_body_json = {
+                    'result' : 'fail',
+                    'user_id' : param_user_id
+                }
+                fail_message_body_str = json.dumps(fail_body_json)
+                try:
+                    # Send message to Request Queue
+                    response_queue.send_message(MessageBody=fail_message_body_str, QueueUrl=AWS_RESPONSE_SQS_URL)
+                    logger.info("Send message failed! (Message body : { result : %s, user_id : %s })", "fail", param_user_id)
+                except ClientError as error:
+                    logger.exception("Send message failed! (Message body : { result : %s, user_id : %s })", "fail", param_user_id)
+
+                    raise error                
+
+
             ### hairclip inference 실행 (색깔 별로 inference)
 
             # HairCLIP 폴더로 작업 디렉토리 변경
@@ -163,15 +181,20 @@ def main():
             
             logger.info("inference of user_id : " + str(param_user_id) +  "success!! ")
 
-            message_body_json = {
+            # 추론(inference) 이후에는 latent_code 정보 삭제
+            delete_latent_cmd = 'rm /home/ubuntu/BeforeHairshop/HairCLIP/base_face.pt'
+            subprocess.call(delete_latent_cmd, shell=True)
+
+            success_msg_json = {
+                'result' : 'success',
                 'user_id' : param_user_id
             }
 
-            message_body_str = json.dumps(message_body_json)
+            success_message_body_str = json.dumps(success_msg_json)
 
             try:
                 # Send message to Request Queue
-                response_queue.send_message(MessageBody=message_body_str, QueueUrl=AWS_RESPONSE_SQS_URL)
+                response_queue.send_message(MessageBody=success_message_body_str, QueueUrl=AWS_RESPONSE_SQS_URL)
                 logger.info("Send message failed! (Message body : { user_id : %s })", param_user_id)
             except ClientError as error:
                 logger.exception("Send message failed! (Message body : { user_id : %s })", param_user_id)
