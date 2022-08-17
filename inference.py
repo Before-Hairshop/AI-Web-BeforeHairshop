@@ -107,7 +107,7 @@ def main():
             subprocess.call("/home/ubuntu/BeforeHairshop/encoder4editing/e4e_encoding.py", shell=True)
             
             # e4e 모델로 임베딩됐는지 확인 (파일 생성 안됐으면, fail return)
-            if os.path.isfile('/home/ubuntu/BeforeHairshop/HairCLIP/base_face.pt'):
+            if os.path.isfile('/home/ubuntu/BeforeHairshop/HairCLIP/base_face.pt') == False:
                 fail_body_json = {
                     'result' : 'fail',
                     'user_id' : param_user_id
